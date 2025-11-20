@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學校小編社群貼文生成系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        }
+        .tag {
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .tag.selected {
+            background-color: #3b82f6; /* bg-blue-500 */
+            color: white;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+        .length-btn.selected {
+            background-color: #3b82f6;
+            color: white;
+        }
+        #loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #3b82f6;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(30deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto px-4 py-8 md:py-12 max-w-5xl">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">學校小編社群貼文生成系統</h1>
+            <p class="mt-2 text-gray-600">根據您的需求，快速生成專業、有吸引力的社群貼文。</p>
+        </header>
+
+        <main class="bg-white p-6 md:p-8 rounded-2xl shadow-lg">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Column: Inputs -->
+                <div class="space-y-6">
+                    <div>
+                        <label for="theme" class="block text-sm font-medium text-gray-700 mb-1">貼文主題/關鍵字 <span class="text-red-500">*</span></label>
+                        <textarea id="theme" rows="3" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="輸入貼文主題或關鍵字..."></textarea>
+                    </div>
+                    <div>
+                        <label for="cta" class="block text-sm font-medium text-gray-700 mb-1">行動呼籲/宣傳文字 (選填)</label>
+                        <textarea id="cta" rows="2" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="輸入行動呼籲或宣傳文字..."></textarea>
+                    </div>
+                    <div>
+                        <label for="signature" class="block text-sm font-medium text-gray-700 mb-1">小編署名 (選填)</label>
+                        <input type="text" id="signature" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="輸入小編署名...">
+                    </div>
+                     
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">您的 Google API 金鑰 <span class="text-red-500">*</span></label>
+                        <input type="password" id="apiKey" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="請貼上您從 Google AI Studio 取得的 API 金鑰">
+                        <p class="mt-1 text-xs text-gray-500">您的金鑰將只儲存在您的瀏覽器中，不會被傳送到任何地方。</p>
+                    </div>
+                </div>
+
+                <!-- Right Column: Options -->
+                <div class="space-y-6">
+                    <!-- Target Audience -->
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-700 mb-2">目標受眾 (複選)</h3>
+                        <div id="audience-tags" class="flex flex-wrap gap-2">
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">新生</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">在校學生</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">家長</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">校友</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">未來學生</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">社區居民</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">合作夥伴</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">社會大眾</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">教育界人士</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">其他</span>
+                        </div>
+                    </div>
+                     <!-- Post Goal -->
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-700 mb-2">貼文目的 (複選)</h3>
+                        <div id="goal-tags" class="flex flex-wrap gap-2">
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">招募新生</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">形象營造</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">學校特色</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">活動宣傳</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">親師互動</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">榮譽表揚</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">成果展現</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">政令宣導</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">資源引入</span>
+                             <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">其他</span>
+                        </div>
+                    </div>
+                    <!-- Related Topics -->
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-700 mb-2">相關議題 (複選)</h3>
+                        <div id="topic-tags" class="flex flex-wrap gap-2">
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">閱讀推動</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">衛生教育</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">資訊科技</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">環境教育</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">國際教育</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">幸福保衛</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">多元展能</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">學生學習</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">校園安全</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">體育競技</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">學生輔導</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">技職教育</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">多元文化</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">教師甄試</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">藝術文化</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">特殊教育</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">防災教育</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">教師專業</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">適性輔導</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">親職教育</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">學校工程</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">升學考試</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">線上學習</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">幼兒教育</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">學校活動</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">健康教育</span>
+                            <span class="tag bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full">其他</span>
+                        </div>
+                    </div>
+                    <!-- Word Count -->
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-700 mb-2">文字數量</h3>
+                        <div id="length-selector" class="flex items-center border border-gray-300 rounded-lg p-1 w-min">
+                            <button class="length-btn px-4 py-1.5 text-sm rounded-md selected" data-value="簡短">簡短</button>
+                            <button class="length-btn px-4 py-1.5 text-sm rounded-md" data-value="適中">適中</button>
+                            <button class="length-btn px-4 py-1.5 text-sm rounded-md" data-value="較長">較長</button>
+                        </div>
+                    </div>
+                    <!-- Bilingual -->
+                    <div>
+                         <h3 class="text-sm font-medium text-gray-700 mb-2">雙語版</h3>
+                        <label for="bilingual-toggle" class="inline-flex items-center cursor-pointer">
+                          <span class="relative">
+                            <span id="bilingual-bg" class="block w-10 h-6 bg-gray-200 rounded-full transition-colors"></span>
+                            <span id="bilingual-switch" class="absolute left-1 top-1 block w-4 h-4 bg-white rounded-full transition-transform transform"></span>
+                          </span>
+                          <span class="ml-3 text-sm text-gray-600">產生中/英雙語版本</span>
+                        </label>
+                        <input type="checkbox" id="bilingual-toggle" class="hidden">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Button -->
+            <div class="mt-8 text-center">
+                <button id="generate-btn" class="w-full md:w-auto bg-blue-600 text-white font-bold py-3 px-12 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 ease-in-out transform hover:scale-105">
+                    ✨ 生成貼文
+                </button>
+            </div>
+             
+            <!-- Output Section -->
+            <div id="output-section" class="mt-10 hidden">
+                <h2 class="text-2xl font-bold mb-4 border-b pb-2">生成的貼文內容</h2>
+                <div id="loading-indicator" class="flex justify-center items-center py-10">
+                    <div id="loading-spinner"></div>
+                    <p class="ml-4 text-gray-600">AI 正在努力創作中，請稍候...</p>
+                </div>
+                <div id="result-container" class="hidden">
+                    <div class="border-b border-gray-200">
+                        <nav id="result-tabs" class="-mb-px flex space-x-4" aria-label="Tabs"></nav>
+                    </div>
+                    <div id="result-content" class="mt-4"></div>
+                </div>
+                 <div id="error-message" class="hidden mt-4 text-center bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function initializeApp() {
+            const apiKeyInput = document.getElementById('apiKey');
+             
+            // --- Event Listeners Setup ---
+
+            // Tag selection logic
+            function setupTagSelection(containerId) {
+                const container = document.getElementById(containerId);
+                container.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('tag')) {
+                        e.target.classList.toggle('selected');
+                    }
+                });
+            }
+            setupTagSelection('audience-tags');
+            setupTagSelection('goal-tags');
+            setupTagSelection('topic-tags');
+
+            // Length selection logic
+            const lengthSelector = document.getElementById('length-selector');
+            lengthSelector.addEventListener('click', (e) => {
+                if (e.target.classList.contains('length-btn')) {
+                    lengthSelector.querySelectorAll('.length-btn').forEach(btn => btn.classList.remove('selected'));
+                    e.target.classList.add('selected');
+                }
+            });
+
+            // Bilingual toggle logic
+            const bilingualToggle = document.getElementById('bilingual-toggle');
+            const bilingualSwitch = document.getElementById('bilingual-switch');
+            const bilingualBg = document.getElementById('bilingual-bg');
+            bilingualToggle.addEventListener('change', () => {
+                 bilingualSwitch.classList.toggle('translate-x-4', bilingualToggle.checked);
+                 bilingualBg.classList.toggle('bg-blue-500', bilingualToggle.checked);
+                 bilingualBg.classList.toggle('bg-gray-200', !bilingualToggle.checked);
+            });
+             
+            // API Key persistence
+            apiKeyInput.value = localStorage.getItem('geminiApiKey') || '';
+            apiKeyInput.addEventListener('input', () => {
+                localStorage.setItem('geminiApiKey', apiKeyInput.value);
+            });
+
+            // --- Main Generate Button Logic ---
+            const generateBtn = document.getElementById('generate-btn');
+            const outputSection = document.getElementById('output-section');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            const resultContainer = document.getElementById('result-container');
+            const errorMessage = document.getElementById('error-message');
+            const tabsContainer = document.getElementById('result-tabs');
+            const contentContainer = document.getElementById('result-content');
+
+
+            generateBtn.addEventListener('click', async () => {
+                const theme = document.getElementById('theme').value.trim();
+                const apiKey = apiKeyInput.value.trim();
+                const themeField = document.getElementById('theme');
+                const apiKeyField = document.getElementById('apiKey');
+
+                // Clear previous validation errors
+                themeField.classList.remove('border-red-500');
+                apiKeyField.classList.remove('border-red-500');
+
+                // Validation
+                if (!theme || !apiKey) {
+                    if (!theme) themeField.classList.add('border-red-500');
+                    if (!apiKey) apiKeyField.classList.add('border-red-500');
+                    
+                    outputSection.classList.remove('hidden');
+                    loadingIndicator.classList.add('hidden');
+                    resultContainer.classList.add('hidden');
+                    errorMessage.textContent = '請務必填寫「貼文主題/關鍵字」和「API 金鑰」。';
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+                
+                // Hide error message if validation passes
+                errorMessage.classList.add('hidden');
+
+                // Show loading state
+                outputSection.classList.remove('hidden');
+                resultContainer.classList.add('hidden');
+                loadingIndicator.classList.remove('hidden');
+                tabsContainer.innerHTML = '';
+                contentContainer.innerHTML = '';
+
+                try {
+                    const prompt = constructPrompt();
+                    const generatedText = await callGeminiApi(apiKey, prompt);
+                    
+                    // Split the text into versions. Regex to handle variations.
+                    const versions = generatedText.split(/---+\s*版本\s*\d+\s*---+/).filter(v => v.trim() !== '');
+
+                    if (versions.length > 0) {
+                        versions.forEach((version, index) => {
+                            const versionNumber = index + 1;
+
+                            // Create Tab Button
+                            const tabButton = document.createElement('button');
+                            tabButton.className = `whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm`;
+                            tabButton.textContent = `版本 ${versionNumber}`;
+                            tabButton.dataset.target = `version-${versionNumber}`;
+                            if (index === 0) {
+                                tabButton.classList.add('border-blue-500', 'text-blue-600');
+                            } else {
+                                tabButton.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                            }
+                            tabsContainer.appendChild(tabButton);
+
+                            // Create Content Panel
+                            const contentPanel = document.createElement('div');
+                            contentPanel.id = `version-${versionNumber}`;
+                            contentPanel.className = 'relative bg-gray-100 p-6 rounded-lg prose max-w-none';
+                            if (index !== 0) {
+                                contentPanel.classList.add('hidden');
+                            }
+                            
+                            const preElement = document.createElement('pre');
+                            preElement.className = 'post-output whitespace-pre-wrap break-words font-sans text-base text-gray-800';
+                            preElement.textContent = version.trim();
+
+                            contentPanel.innerHTML = `
+                                <button class="copy-btn absolute top-3 right-3 bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm font-semibold py-1 px-3 rounded-md transition">複製內容</button>
+                            `;
+                            contentPanel.appendChild(preElement);
+                            contentContainer.appendChild(contentPanel);
+                        });
+                    } else {
+                         // Fallback for single version response
+                        const tabButton = document.createElement('button');
+                        tabButton.className = `whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm border-blue-500 text-blue-600`;
+                        tabButton.textContent = `版本 1`;
+                        tabsContainer.appendChild(tabButton);
+
+                        const contentPanel = document.createElement('div');
+                        contentPanel.className = 'relative bg-gray-100 p-6 rounded-lg prose max-w-none';
+                        const preElement = document.createElement('pre');
+                        preElement.className = 'post-output whitespace-pre-wrap break-words font-sans text-base text-gray-800';
+                        preElement.textContent = generatedText.trim();
+                        contentPanel.innerHTML = `<button class="copy-btn absolute top-3 right-3 bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm font-semibold py-1 px-3 rounded-md transition">複製內容</button>`;
+                        contentPanel.appendChild(preElement);
+                        contentContainer.appendChild(contentPanel);
+                    }
+
+                    resultContainer.classList.remove('hidden');
+
+                } catch (error) {
+                    console.error("API Error:", error);
+                    errorMessage.textContent = `生成失敗：${error.message}。請檢查您的 API 金鑰是否正確，或稍後再試。`;
+                    errorMessage.classList.remove('hidden');
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                }
+            });
+
+            // --- Helper Functions ---
+
+            function getSelectedTags(containerId) {
+                return Array.from(document.querySelectorAll(`#${containerId} .tag.selected`)).map(tag => tag.textContent);
+            }
+
+            function constructPrompt() {
+                const theme = document.getElementById('theme').value.trim();
+                const cta = document.getElementById('cta').value.trim();
+                const signature = document.getElementById('signature').value.trim();
+
+                const audience = getSelectedTags('audience-tags').join(', ') || '無指定';
+                const goals = getSelectedTags('goal-tags').join(', ') || '無指定';
+                const topics = getSelectedTags('topic-tags').join(', ') || '無指定';
+                
+                const length = document.querySelector('#length-selector .length-btn.selected').dataset.value;
+                const isBilingual = document.getElementById('bilingual-toggle').checked;
+
+                let prompt = `你是一位專業的學校社群小編。請根據以下資訊，為我生成一篇適合發佈在社群媒體（如 Facebook, Instagram）的貼文。
+                
+                ---
+                **貼文資訊**
+                - **主題/關鍵字:** ${theme}
+                - **目標受眾:** ${audience}
+                - **貼文目的:** ${goals}
+                - **相關議題:** ${topics}
+                - **期望長度:** ${length}
+                ---
+                
+                **寫作要求:**
+                1.  **語氣:** 請使用親切、正面、有吸引力的語氣。
+                2.  **格式:** 善用 emoji 增加貼文活潑度，並使用適當的段落分隔，讓文章易於閱讀。
+                3.  **Hashtags:** 在文末，請根據主題和議題，生成 3-5 個相關的 hashtags。
+                4.  **多樣性:** 請為我生成「三種」不同風格或切入點的貼文版本，並用 "--- 版本 1 ---", "--- 版本 2 ---", "--- 版本 3 ---" 這樣的格式來分隔每個版本。`;
+                
+                if (cta) {
+                    prompt += `\n5.  **行動呼籲:** 請在貼文中自然地融入這個行動呼籲：「${cta}」。`;
+                }
+
+                if (signature) {
+                    prompt += `\n6.  **署名:** 文末請加上署名：「${signature}」。`;
+                }
+                
+                if (isBilingual) {
+                    prompt += `\n7.  **語言:** 請同時提供「繁體中文」和「English」兩個版本，並清楚標示。`;
+                } else {
+                     prompt += `\n7.  **語言:** 請使用「繁體中文」撰寫。`;
+                }
+
+                prompt += `\n\n請直接開始撰寫貼文內容。`;
+
+                return prompt;
+            }
+
+            async function callGeminiApi(apiKey, prompt) {
+                // 修正重點：改用環境支援的特定預覽版本 gemini-2.5-flash-preview-09-2025
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                
+                const payload = {
+                    contents: [{
+                        parts: [{ text: prompt }]
+                    }],
+                     "generationConfig": {
+                        "temperature": 0.7,
+                        "topK": 40,
+                        "topP": 0.95,
+                        "maxOutputTokens": 8192,
+                    },
+                    // 加入安全設定，避免學校相關內容誤觸敏感詞過濾
+                    "safetySettings": [
+                        { "category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH" },
+                        { "category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH" },
+                        { "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH" },
+                        { "category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH" }
+                    ]
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error.message || `HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts[0].text) {
+                     return result.candidates[0].content.parts[0].text;
+                } else {
+                    console.warn("Unexpected API response structure:", result);
+                    if (result.promptFeedback && result.promptFeedback.blockReason) {
+                         throw new Error(`內容生成被阻擋，原因：${result.promptFeedback.blockReason}`);
+                    }
+                    throw new Error('API 回應格式不符，無法取得生成內容。');
+                }
+            }
+            
+            // Tab switching logic
+            tabsContainer.addEventListener('click', e => {
+                if (e.target.tagName === 'BUTTON') {
+                    // Deactivate all tabs and panels
+                    tabsContainer.querySelectorAll('button').forEach(btn => {
+                        btn.classList.remove('border-blue-500', 'text-blue-600');
+                        btn.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                    });
+                    contentContainer.querySelectorAll('div[id^="version-"]').forEach(panel => {
+                        panel.classList.add('hidden');
+                    });
+
+                    // Activate clicked tab and panel
+                    e.target.classList.add('border-blue-500', 'text-blue-600');
+                    e.target.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                    const targetPanel = document.getElementById(e.target.dataset.target);
+                    if (targetPanel) {
+                        targetPanel.classList.remove('hidden');
+                    }
+                }
+            });
+
+            // Copy button logic (using event delegation)
+            contentContainer.addEventListener('click', e => {
+                 if (e.target.classList.contains('copy-btn')) {
+                    const copyBtn = e.target;
+                    const textToCopy = copyBtn.parentElement.querySelector('.post-output').textContent;
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        copyBtn.textContent = '已複製!';
+                        setTimeout(() => {
+                            copyBtn.textContent = '複製內容';
+                        }, 2000);
+                    }).catch(err => {
+                        console.error('無法複製文字: ', err);
+                        try {
+                            const textArea = document.createElement('textarea');
+                            textArea.value = textToCopy;
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(textArea);
+                            copyBtn.textContent = '已複製!';
+                            setTimeout(() => {
+                                copyBtn.textContent = '複製內容';
+                            }, 2000);
+                        } catch (fallbackErr) {
+                             alert('複製失敗，請手動複製。');
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Directly call the initialization function.
+        initializeApp();
+    </script>
+
+</body>
+</html>
